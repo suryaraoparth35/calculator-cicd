@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <title>Clear | Calculator</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script defer src="/arithmetic-core.js"></script>
+  <script defer src="/calculator.js"></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Clear Calculator home"><span class="brand-mark">+</span> clear</a>
+      <span class="top-note">A little math, made simple</span>
+    </header>
+
+    <section class="hero" aria-labelledby="page-title">
+      <p class="eyebrow">EVERYDAY CALCULATOR</p>
+      <h1 id="page-title">Make the numbers<br><span>make sense.</span></h1>
+      <p class="intro">A calm, simple space for quick calculations.</p>
+    </section>
+
+    <section class="calculator" aria-label="Calculator">
+      <div class="display" aria-live="polite">
+        <p class="display-label" id="display-label">READY WHEN YOU ARE</p>
+        <output id="result" class="result">0</output>
+      </div>
+      <form id="calculator-form">
+        <label class="field-label" for="first-number">First number</label>
+        <input id="first-number" name="first" type="number" step="any" inputmode="decimal" placeholder="e.g. 24" required>
+        <div class="operation-row">
+          <div>
+            <label class="field-label" for="operator">Operation</label>
+            <select id="operator" name="operator" aria-label="Operation">
+              <option value="+">Add (+)</option>
+              <option value="-">Subtract (−)</option>
+              <option value="*">Multiply (×)</option>
+              <option value="/">Divide (÷)</option>
+            </select>
+          </div>
+          <span class="operation-symbol" aria-hidden="true">→</span>
+        </div>
+        <label class="field-label" for="second-number">Second number</label>
+        <input id="second-number" name="second" type="number" step="any" inputmode="decimal" placeholder="e.g. 6" required>
+        <div class="actions">
+          <button class="calculate-button" type="submit">Calculate <span aria-hidden="true">↗</span></button>
+          <button class="clear-button" id="clear-button" type="button">Clear</button>
+        </div>
+      </form>
+      <p class="footnote"><span class="status-dot"></span> Free to use. No sign-up, no fuss.</p>
+    </section>
+    <footer>Thoughtful tools for everyday moments.</footer>
+  </main>
+</body>
+</html>

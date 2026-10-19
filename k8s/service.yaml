@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: calculator-cicd
+  labels:
+    app: calculator-cicd
+spec:
+  type: NodePort
+  selector:
+    app: calculator-cicd
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      nodePort: 30080
