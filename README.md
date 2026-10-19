@@ -31,24 +31,25 @@ Open `http://localhost:8080`.
 4. In Jenkins, install the Pipeline and Git plugins. Create a Pipeline job with **Pipeline script from SCM**, set the GitHub repository URL, branch `main`, and script path `Jenkinsfile`.
 5. Add a Jenkins credential of type **Username with password**, ID `dockerhub-creds`. Enter your Docker Hub username and a Docker Hub access token with read/write permission. Do not commit the token.
 6. Confirm the Jenkins agent's current Kubernetes context is the intended Minikube cluster. The pipeline deploys into the `default` namespace.
-7. Run the job. It tags the image with the Jenkins build number, pushes it to Docker Hub, applies the Kubernetes manifests, waits for two replicas, and checks `/health` through a temporary port-forward.
+7. Run the job. It tags the image with the Jenkins build number, pushes it to Docker Hub, applies the Kubernetes manifests, waits for two replicas, and starts the persistent app port-forward after checking `/health`.
+8. The Jenkinsfile polls GitHub about every two minutes. After the first run loads the updated Jenkinsfile, pushes to `main` trigger a build and deployment automatically.
 
 ## Open the deployed app
 
-The Service uses NodePort `30080`. On the Minikube host, check the service with:
+After each successful deployment, Jenkins starts or refreshes a port-forward on the EC2 host at port `3000`. Allow inbound TCP `3000` from your IP in the EC2 security group, then open `http://<EC2_PUBLIC_IP>:3000/`. Keep the Jenkins host running; the pipeline maintains the port-forward process between builds.
+
+The Kubernetes Service also uses NodePort `30080`. On the Minikube host, check the service with:
 
 ```sh
 kubectl get pods,service -l app=calculator-cicd
 minikube ip
 ```
 
-Try `http://<MINIKUBE_IP>:30080/` from a machine that can reach that Minikube IP. For an EC2-hosted Minikube using Docker driver, the Minikube IP may be private to the host; the CI pipeline's health check uses port-forwarding for that reason. For temporary access from a browser, run on the EC2 host:
+Try `http://<MINIKUBE_IP>:30080/` from a machine that can reach that Minikube IP. For an EC2-hosted Minikube using Docker driver, the Minikube IP may be private to the host, so the pipeline exposes the service through its port-forward.
 
-```sh
-kubectl port-forward --address 0.0.0.0 service/calculator-cicd 3000:80
-```
+For one-time setup, add an inbound TCP `3000` rule to the EC2 security group, restricted to your IP address.
 
-Then allow inbound TCP `3000` only from your IP in the EC2 security group and open `http://<EC2_PUBLIC_IP>:3000/`. Keep the port-forward process running while you use the page, then stop it.
+If the Jenkins host restarts, run the Jenkins job again to restore the port-forward.
 
 ## Demonstrate a second deployment
 

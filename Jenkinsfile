@@ -1,6 +1,7 @@
 pipeline {
     agent any
     options { timestamps(); disableConcurrentBuilds() }
+    triggers { pollSCM('H/2 * * * *') }
 
     environment {
         K8S_NAMESPACE = 'default'
@@ -56,10 +57,31 @@ pipeline {
                 sh '''
                     kubectl get deployment,pods,service -l app=calculator-cicd -n "$K8S_NAMESPACE"
                     kubectl get deployment calculator-cicd -n "$K8S_NAMESPACE" -o jsonpath='{.status.readyReplicas}' | grep -q '2'
-                    kubectl port-forward service/calculator-cicd 18080:80 -n "$K8S_NAMESPACE" >/tmp/calculator-cicd-port-forward.log 2>&1 & echo $! > /tmp/calculator-cicd-port-forward.pid
-                    trap 'kill $(cat /tmp/calculator-cicd-port-forward.pid) 2>/dev/null || true' EXIT
-                    for attempt in $(seq 1 20); do curl --fail --silent http://127.0.0.1:18080/health && exit 0; sleep 2; done
-                    echo 'Calculator health endpoint did not respond' >&2
+                    PF_PID_FILE=/tmp/calculator-cicd-public-forward.pid
+                    PF_LOG=/tmp/calculator-cicd-public-forward.log
+                    if [ -f "$PF_PID_FILE" ]; then
+                        old_pid=$(cat "$PF_PID_FILE")
+                        kill "$old_pid" 2>/dev/null || true
+                        for attempt in $(seq 1 10); do
+                            kill -0 "$old_pid" 2>/dev/null || break
+                            sleep 1
+                        done
+                        rm -f "$PF_PID_FILE"
+                    fi
+                    if curl --fail --silent --max-time 2 http://127.0.0.1:3000/health >/dev/null; then
+                        echo 'Port 3000 is already in use. Stop any manually started calculator port-forward once, then rerun this build.' >&2
+                        exit 1
+                    fi
+                    JENKINS_NODE_COOKIE=dontKillMe nohup kubectl port-forward --address 0.0.0.0 service/calculator-cicd 3000:80 -n "$K8S_NAMESPACE" >"$PF_LOG" 2>&1 </dev/null &
+                    echo $! > "$PF_PID_FILE"
+                    for attempt in $(seq 1 20); do
+                        if curl --fail --silent --max-time 2 http://127.0.0.1:3000/health; then
+                            echo
+                            exit 0
+                        fi
+                        sleep 2
+                    done
+                    echo 'Calculator public port-forward did not become ready; see /tmp/calculator-cicd-public-forward.log' >&2
                     exit 1
                 '''
             }
